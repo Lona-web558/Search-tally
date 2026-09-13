@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Tally</title>
+<style>
+  :root{
+    --bg: #0F1B1F;
+    --panel: #15252A;
+    --panel-line: #24393F;
+    --amber: #E8A33D;
+    --amber-dim: #8A6A34;
+    --text: #EDEAE1;
+    --muted: #7E969C;
+    --green: #7FB77E;
+    --red: #C96A5E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    padding: 28px 20px 60px;
+  }
+  .wrap{ max-width: 920px; margin: 0 auto; }
+  header{
+    display:flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid var(--panel-line);
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  h1{
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    font-weight: 400;
+    font-size: 30px;
+    margin: 0;
+  }
+  h1 em{ font-style: normal; color: var(--amber); }
+  .sub{ color: var(--muted); font-size: 14px; max-width: 320px; line-height: 1.5; }
+
+  .layout{ display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 780px){ .layout{ grid-template-columns: 280px 1fr; } }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 4px;
+    padding: 20px;
+  }
+  label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  input[type=text]{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--panel-line);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 3px;
+    font-size: 15px;
+    margin-bottom: 18px;
+  }
+  input[type=text]:focus{ outline: 2px solid var(--amber-dim); outline-offset: 1px; }
+
+  .platform-buttons{
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .platform-buttons button{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--panel-line);
+    color: var(--text);
+    border-radius: 3px;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .platform-buttons button:hover{ border-color: var(--amber-dim); }
+  .platform-buttons button .plus{
+    color: var(--amber);
+    font-size: 12px;
+    border: 1px solid var(--amber-dim);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  .hint{
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--panel-line);
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+
+  .table-panel h2{
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td{
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--panel-line);
+  }
+  th{
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+  }
+  td.count{
+    text-align: center;
+    color: var(--text);
+  }
+  td.count.zero{ color: var(--muted); }
+  td.total{
+    text-align: center;
+    color: var(--amber);
+    font-weight: 600;
+  }
+  td.uname{
+    color: var(--text);
+    font-weight: 500;
+  }
+  .row-actions button{
+    background: none;
+    border: none;
+    color: var(--red);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+  .row-actions button:hover{ text-decoration: underline; }
+  .empty-table{
+    color: var(--muted);
+    font-size: 13px;
+    padding: 20px 4px;
+  }
+  .table-footer{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--panel-line);
+  }
+  .table-footer .grand-total{
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .table-footer .grand-total strong{ color: var(--amber); }
+  #resetBtn{
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 7px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  #resetBtn:hover{ background: rgba(201,106,94,0.1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Search <em>Tally</em></h1>
+    <div class="sub">Tracks how many searches you've run for each username, per platform.</div>
+  </header>
+
+  <div class="layout">
+
+    <div class="panel">
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="e.g. lona_smith" value="lona_smith">
+
+      <label>Log a search &amp; open it</label>
+      <div class="platform-buttons" id="platformButtons"></div>
+
+      <div class="hint">
+        Each button opens that platform's search in a new tab and adds one to that username's tally. Counts are saved in this browser, so they'll still be here next time you open this file.
+      </div>
+    </div>
+
+    <div class="panel table-panel">
+      <h2>Tally by username</h2>
+      <div id="tableWrap"></div>
+      <div class="table-footer">
+        <div class="grand-total">Total logged searches: <strong id="grandTotal">0</strong></div>
+        <button id="resetBtn">Reset all</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const PLATFORMS = [
+    { key: 'x',         label: 'X',         url: q => `https://x.com/search?q=${q}&src=typed_query` },
+    { key: 'youtube',   label: 'YouTube',   url: q => `https://www.youtube.com/results?search_query=${q}` },
+    { key: 'tiktok',    label: 'TikTok',    url: q => `https://www.tiktok.com/search?q=${q}` },
+    { key: 'instagram', label: 'Instagram', url: q => `https://www.instagram.com/explore/search/keyword/?q=${q}` },
+    { key: 'facebook',  label: 'Facebook',  url: q => `https://www.facebook.com/search/top?q=${q}` },
+  ];
+
+  const STORAGE_KEY = 'search-tally-data';
+
+  const usernameInput = document.getElementById('username');
+  const platformButtonsEl = document.getElementById('platformButtons');
+  const tableWrap = document.getElementById('tableWrap');
+  const grandTotalEl = document.getElementById('grandTotal');
+  const resetBtn = document.getElementById('resetBtn');
+
+  function loadData(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e){ return {}; }
+  }
+  function saveData(data){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){ /* ignore */ }
+  }
+
+  let data = loadData(); // { username: { x: n, youtube: n, ... } }
+
+  function renderButtons(){
+    platformButtonsEl.innerHTML = '';
+    PLATFORMS.forEach(p => {
+      const btn = document.createElement('button');
+      btn.innerHTML = `<span>${p.label}</span><span class="plus">+1 &amp; open</span>`;
+      btn.addEventListener('click', () => logSearch(p.key));
+      platformButtonsEl.appendChild(btn);
+    });
+  }
+
+  function logSearch(platformKey){
+    const rawName = usernameInput.value.trim().replace(/^@/, '');
+    if (!rawName) { usernameInput.focus(); return; }
+
+    if (!data[rawName]) data[rawName] = {};
+    data[rawName][platformKey] = (data[rawName][platformKey] || 0) + 1;
+    saveData(data);
+    renderTable();
+
+    const platform = PLATFORMS.find(p => p.key === platformKey);
+    const url = platform.url(encodeURIComponent(rawName));
+    window.open(url, '_blank');
+  }
+
+  function grandTotal(){
+    let sum = 0;
+    Object.values(data).forEach(row => {
+      Object.values(row).forEach(n => sum += n);
+    });
+    return sum;
+  }
+
+  function renderTable(){
+    const names = Object.keys(data);
+
+    if (names.length === 0){
+      tableWrap.innerHTML = '<div class="empty-table">No searches logged yet — use the buttons on the left.</div>';
+      grandTotalEl.textContent = '0';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Username</th>';
+    PLATFORMS.forEach(p => html += `<th>${p.label}</th>`);
+    html += '<th>Total</th><th></th></tr></thead><tbody>';
+
+    names.forEach(name => {
+      const row = data[name];
+      let rowTotal = 0;
+      html += `<tr><td class="uname">${name}</td>`;
+      PLATFORMS.forEach(p => {
+        const n = row[p.key] || 0;
+        rowTotal += n;
+        html += `<td class="count${n === 0 ? ' zero' : ''}">${n}</td>`;
+      });
+      html += `<td class="total">${rowTotal}</td>`;
+      html += `<td class="row-actions"><button data-name="${name}">Remove</button></td></tr>`;
+    });
+
+    html += '</tbody></table>';
+    tableWrap.innerHTML = html;
+    grandTotalEl.textContent = grandTotal();
+
+    tableWrap.querySelectorAll('.row-actions button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        delete data[btn.dataset.name];
+        saveData(data);
+        renderTable();
+      });
+    });
+  }
+
+  resetBtn.addEventListener('click', () => {
+    data = {};
+    saveData(data);
+    renderTable();
+  });
+
+  renderButtons();
+  renderTable();
+</script>
+</body>
+</html>
